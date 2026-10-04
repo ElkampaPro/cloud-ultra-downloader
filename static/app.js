@@ -310,6 +310,14 @@ btnDownloadDirect.addEventListener("click", async () => {
     }
 });
 
+// Allow pressing Enter to download immediately
+urlInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        btnDownloadDirect.click();
+    }
+});
+
 // Inspect / Batch Modal Handler
 btnInspect.addEventListener("click", async () => {
     const url = urlInput.value.trim();
