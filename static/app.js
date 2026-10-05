@@ -283,6 +283,10 @@ const btnPresetCatalog = document.getElementById("btn-preset-catalog");
 const btnPresetBleach = document.getElementById("btn-preset-bleach");
 const btnPresetBlackClover = document.getElementById("btn-preset-blackclover");
 const btnPresetMovies = document.getElementById("btn-preset-movies");
+const btnPresetMugiSubs = document.getElementById("btn-preset-mugisubs");
+const btnPresetFrieren = document.getElementById("btn-preset-frieren");
+const btnPresetSoloLeveling = document.getElementById("btn-preset-sololeveling");
+const btnPresetToBeHero = document.getElementById("btn-preset-tobehero");
 const btnToggleCatalog = document.getElementById("btn-toggle-catalog");
 const catalogGrid = document.getElementById("catalog-grid");
 const catalogToggleIcon = document.getElementById("catalog-toggle-icon");
@@ -323,6 +327,42 @@ if (btnPresetMovies) {
     });
 }
 
+if (btnPresetMugiSubs) {
+    btnPresetMugiSubs.addEventListener("click", () => {
+        urlInput.value = "https://ddl.mugisubs.workers.dev/";
+        subfolderInput.value = "Anime/MugiSubs";
+        showToast("جاري فحص مكتبة MugiSubs كاملة (68 حلقة)...", "info");
+        btnInspect.click();
+    });
+}
+
+if (btnPresetFrieren) {
+    btnPresetFrieren.addEventListener("click", () => {
+        urlInput.value = "https://ddl.mugisubs.workers.dev/Sousou%20no%20Frieren%20S2/";
+        subfolderInput.value = "Anime/Frieren";
+        showToast("جاري فحص حلقات فريزن S2...", "info");
+        btnInspect.click();
+    });
+}
+
+if (btnPresetSoloLeveling) {
+    btnPresetSoloLeveling.addEventListener("click", () => {
+        urlInput.value = "https://ddl.mugisubs.workers.dev/Solo%20Leveling/";
+        subfolderInput.value = "Anime/SoloLeveling";
+        showToast("جاري فحص حلقات سولو ليفلينج...", "info");
+        btnInspect.click();
+    });
+}
+
+if (btnPresetToBeHero) {
+    btnPresetToBeHero.addEventListener("click", () => {
+        urlInput.value = "https://ddl.mugisubs.workers.dev/To%20Be%20Hero%20X/";
+        subfolderInput.value = "Anime/ToBeHeroX";
+        showToast("جاري فحص حلقات تو بي هيرو X (24 حلقة)...", "info");
+        btnInspect.click();
+    });
+}
+
 // Catalog Toggle and Population
 if (btnToggleCatalog && catalogGrid) {
     btnToggleCatalog.addEventListener("click", async () => {
@@ -333,7 +373,7 @@ if (btnToggleCatalog && catalogGrid) {
             await loadCatalog();
         } else {
             catalogGrid.classList.add("hidden");
-            if (catalogToggleIcon) catalogToggleIcon.textContent = "▼ عرض الأنميات (14 قسم)";
+            if (catalogToggleIcon) catalogToggleIcon.textContent = "▼ عرض الأنميات والمكتبات";
         }
     });
 }
@@ -351,23 +391,37 @@ async function loadCatalog() {
     try {
         const res = await fetch("/api/catalog");
         const data = await res.json();
-        const items = data.catalog || [];
-        if (items.length === 0) {
+        const kiyoshiItems = (data.catalog || []).map(cat => ({
+            ...cat,
+            fullUrl: `https://ddl-kiyoshisubs.vercel.app${cat.path}`,
+            source: "KiyoshiiSubs"
+        }));
+        const mugiItems = (data.mugisubs_catalog || []).map(cat => ({
+            ...cat,
+            fullUrl: `https://ddl.mugisubs.workers.dev${cat.path}`,
+            source: "MugiSubs"
+        }));
+
+        const allItems = [...kiyoshiItems, ...mugiItems];
+        if (allItems.length === 0) {
             catalogGrid.innerHTML = `<div class="col-span-full py-2 text-center text-xs text-slate-500">لا توجد عناصر متاحة</div>`;
             return;
         }
 
-        catalogGrid.innerHTML = items.map(cat => `
+        catalogGrid.innerHTML = allItems.map(cat => `
             <div class="catalog-card p-2.5 rounded-lg bg-dark-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-indigo-500/50 cursor-pointer transition flex flex-col justify-between"
-                 data-url="https://ddl-kiyoshisubs.vercel.app${cat.path}" data-folder="Anime/${cat.id.split('-')[0]}">
+                 data-url="${cat.fullUrl}" data-folder="Anime/${cat.id.replace('mugi-', '').replace('onepiece-', '')}">
                 <div>
-                    <div class="text-[11px] font-bold text-white truncate" dir="ltr">${cat.title}</div>
-                    <div class="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
-                        <span>${cat.count}</span>
+                    <div class="flex items-center justify-between text-[10px] text-slate-400 mb-1">
+                        <span class="px-1.5 py-0.5 rounded ${cat.source === 'MugiSubs' ? 'bg-teal-500/10 text-teal-300 border border-teal-500/20' : 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20'} font-semibold">${cat.source}</span>
                         <span class="font-mono text-cyan-400">${cat.size_str}</span>
                     </div>
+                    <div class="text-[11px] font-bold text-white truncate" dir="ltr">${cat.title}</div>
+                    <div class="text-[10px] text-slate-400 mt-1">
+                        <span>${cat.count}</span>
+                    </div>
                 </div>
-                <div class="mt-2 text-[10px] text-indigo-400 flex items-center gap-1">
+                <div class="mt-2 text-[10px] text-indigo-400 flex items-center gap-1 font-semibold">
                     <span>⚡ تصفح الحلقات</span>
                 </div>
             </div>

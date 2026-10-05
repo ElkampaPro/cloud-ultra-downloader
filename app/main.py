@@ -108,9 +108,14 @@ async def get_status():
 
 @app.get("/api/catalog")
 async def get_catalog():
-    """Returns available anime series & collections for fast selection."""
+    """Returns available anime series & collections from KiyoshiiSubs and MugiSubs."""
     from .resolvers.kiyoshii import CATALOG_ITEMS
-    return {"success": True, "catalog": CATALOG_ITEMS}
+    from .resolvers.mugisubs import MUGISUBS_CATALOG
+    return {
+        "success": True,
+        "catalog": CATALOG_ITEMS,
+        "mugisubs_catalog": MUGISUBS_CATALOG
+    }
 
 @app.post("/api/inspect")
 async def inspect_url(req: InspectRequest):
@@ -146,7 +151,14 @@ async def start_download(req: DownloadRequest):
             for item in resolved.get("items", []):
                 item_url = item.get("url")
                 if item_url:
-                    gid = await aria2_client.add_uri([item_url], options=options)
+                    item_options = options.copy()
+                    if item.get("referer"):
+                        item_options["header"] = [
+                            f"Referer: {item['referer']}",
+                            "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                            "Accept: */*"
+                        ]
+                    gid = await aria2_client.add_uri([item_url], options=item_options)
                     gids.append(gid)
         except Exception as e:
             logger.error(f"Failed to add URL {u}: {e}")
