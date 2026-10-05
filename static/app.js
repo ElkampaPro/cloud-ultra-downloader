@@ -277,14 +277,37 @@ btnClearHistory.addEventListener("click", async () => {
     }
 });
 
+// Quick Preset Shortcuts
+const btnPresetOnePiece = document.getElementById("btn-preset-onepiece");
+const btnPresetBleach = document.getElementById("btn-preset-bleach");
+
+if (btnPresetOnePiece) {
+    btnPresetOnePiece.addEventListener("click", () => {
+        urlInput.value = "https://ddl-kiyoshisubs.vercel.app/One%20Piece/S22%20[Elbaph%20Arc]/SoftSub/";
+        subfolderInput.value = "Anime/OnePiece";
+        showToast("جاري فحص حلقات ون بيس...", "info");
+        btnInspect.click();
+    });
+}
+
+if (btnPresetBleach) {
+    btnPresetBleach.addEventListener("click", () => {
+        urlInput.value = "https://ddl.mugisubs.workers.dev/Bleach%20-%20Sennen%20Kessen-hen%20S4/";
+        subfolderInput.value = "Anime/Bleach";
+        showToast("جاري فحص حلقات بليتش من MugiSubs...", "info");
+        btnInspect.click();
+    });
+}
+
 // Direct Download Button
 btnDownloadDirect.addEventListener("click", async () => {
-    const url = urlInput.value.trim();
-    if (!url) {
+    const rawInput = urlInput.value.trim();
+    if (!rawInput) {
         showToast("يرجى إدخال رابط التحميل أولاً", "error");
         return;
     }
 
+    const lines = rawInput.split(/[\r\n]+/).map(u => u.trim()).filter(u => u.length > 0);
     const folder = subfolderInput.value.trim();
     btnDownloadDirect.disabled = true;
     btnDownloadDirect.innerHTML = `<span>⏳ جاري الإضافة...</span>`;
@@ -293,7 +316,7 @@ btnDownloadDirect.addEventListener("click", async () => {
         const res = await fetch("/api/download", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ urls: [url], folder })
+            body: JSON.stringify({ urls: lines, folder })
         });
         const data = await res.json();
         if (data.success) {
@@ -320,12 +343,33 @@ urlInput.addEventListener("keydown", (e) => {
 
 // Inspect / Batch Modal Handler
 btnInspect.addEventListener("click", async () => {
-    const url = urlInput.value.trim();
-    if (!url) {
+    const rawInput = urlInput.value.trim();
+    if (!rawInput) {
         showToast("يرجى إدخال رابط الفحص أولاً", "error");
         return;
     }
 
+    // Check if multiple URLs are pasted in the input
+    const lines = rawInput.split(/[\r\n]+/).map(u => u.trim()).filter(u => u.startsWith("http") || u.startsWith("magnet:"));
+    if (lines.length > 1) {
+        const items = lines.map((u, i) => {
+            const cleanName = decodeURIComponent(u.split("/").pop().split("?")[0]) || `ملف ${i + 1}`;
+            return {
+                name: cleanName,
+                url: u,
+                size: 0,
+                size_formatted: "رابط مباشر"
+            };
+        });
+        openBatchModal({
+            title: `قائمة الروابط المدخلة (${items.length} روابط)`,
+            resolver_used: "قائمة روابط مجمعة",
+            items: items
+        });
+        return;
+    }
+
+    const url = lines[0] || rawInput;
     btnInspect.disabled = true;
     btnInspect.innerHTML = `<span>⏳ جاري الفحص...</span>`;
 
@@ -338,23 +382,14 @@ btnInspect.addEventListener("click", async () => {
         const data = await res.json();
         
         if (!data.success) {
-            showToast("فشل فحص الرابط: " + (data.error || ""), "error");
+            showToast(data.error || "تعذر فحص الرابط", "error");
             return;
         }
 
-        if (data.type === "batch" && data.items && data.items.length > 0) {
+        if (data.items && data.items.length > 0) {
             openBatchModal(data);
         } else {
-            // Single item resolved, ask or directly start
-            showToast(`تم استخراج الرابط المباشر: ${data.title}`);
-            const folder = subfolderInput.value.trim();
-            const downloadUrl = (data.items && data.items[0]) ? data.items[0].url : url;
-            await fetch("/api/download", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ urls: [downloadUrl], folder })
-            });
-            urlInput.value = "";
+            showToast("لم يتم العثور على ملفات قابلة للتحميل في هذا الرابط", "error");
         }
     } catch (e) {
         showToast("خطأ أثناء فحص الرابط", "error");
