@@ -277,15 +277,21 @@ btnClearHistory.addEventListener("click", async () => {
     }
 });
 
-// Quick Preset Shortcuts
+// Quick Preset Shortcuts & Catalog
 const btnPresetOnePiece = document.getElementById("btn-preset-onepiece");
+const btnPresetCatalog = document.getElementById("btn-preset-catalog");
 const btnPresetBleach = document.getElementById("btn-preset-bleach");
+const btnPresetBlackClover = document.getElementById("btn-preset-blackclover");
+const btnPresetMovies = document.getElementById("btn-preset-movies");
+const btnToggleCatalog = document.getElementById("btn-toggle-catalog");
+const catalogGrid = document.getElementById("catalog-grid");
+const catalogToggleIcon = document.getElementById("catalog-toggle-icon");
 
 if (btnPresetOnePiece) {
     btnPresetOnePiece.addEventListener("click", () => {
         urlInput.value = "https://ddl-kiyoshisubs.vercel.app/One%20Piece/S22%20[Elbaph%20Arc]/SoftSub/";
         subfolderInput.value = "Anime/OnePiece";
-        showToast("جاري فحص حلقات ون بيس...", "info");
+        showToast("جاري فحص حلقات ون بيس (25 حلقة كاملة)...", "info");
         btnInspect.click();
     });
 }
@@ -294,9 +300,89 @@ if (btnPresetBleach) {
     btnPresetBleach.addEventListener("click", () => {
         urlInput.value = "https://ddl.mugisubs.workers.dev/Bleach%20-%20Sennen%20Kessen-hen%20S4/";
         subfolderInput.value = "Anime/Bleach";
-        showToast("جاري فحص حلقات بليتش من MugiSubs...", "info");
+        showToast("جاري فحص حلقات بليتش...", "info");
         btnInspect.click();
     });
+}
+
+if (btnPresetBlackClover) {
+    btnPresetBlackClover.addEventListener("click", () => {
+        urlInput.value = "https://ddl-kiyoshisubs.vercel.app/Black%20Clover%20S2/HardSub/";
+        subfolderInput.value = "Anime/BlackClover";
+        showToast("جاري فحص حلقات بلاك كلوفر...", "info");
+        btnInspect.click();
+    });
+}
+
+if (btnPresetMovies) {
+    btnPresetMovies.addEventListener("click", () => {
+        urlInput.value = "https://ddl-kiyoshisubs.vercel.app/One%20Piece/One%20Piece%20Film%20Red/";
+        subfolderInput.value = "Anime/OnePiece/Movies";
+        showToast("جاري فحص فيلم ون بيس ريد...", "info");
+        btnInspect.click();
+    });
+}
+
+// Catalog Toggle and Population
+if (btnToggleCatalog && catalogGrid) {
+    btnToggleCatalog.addEventListener("click", async () => {
+        const isHidden = catalogGrid.classList.contains("hidden");
+        if (isHidden) {
+            catalogGrid.classList.remove("hidden");
+            if (catalogToggleIcon) catalogToggleIcon.textContent = "▲ إخفاء الفهرس";
+            await loadCatalog();
+        } else {
+            catalogGrid.classList.add("hidden");
+            if (catalogToggleIcon) catalogToggleIcon.textContent = "▼ عرض الأنميات (14 قسم)";
+        }
+    });
+}
+
+if (btnPresetCatalog) {
+    btnPresetCatalog.addEventListener("click", () => {
+        if (btnToggleCatalog) btnToggleCatalog.click();
+        catalogGrid.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+}
+
+async function loadCatalog() {
+    if (catalogGrid.children.length > 0) return;
+    catalogGrid.innerHTML = `<div class="col-span-full py-4 text-center text-xs text-slate-400">⏳ جاري تحميل قائمة الأنميات...</div>`;
+    try {
+        const res = await fetch("/api/catalog");
+        const data = await res.json();
+        const items = data.catalog || [];
+        if (items.length === 0) {
+            catalogGrid.innerHTML = `<div class="col-span-full py-2 text-center text-xs text-slate-500">لا توجد عناصر متاحة</div>`;
+            return;
+        }
+
+        catalogGrid.innerHTML = items.map(cat => `
+            <div class="catalog-card p-2.5 rounded-lg bg-dark-900/80 hover:bg-slate-800/80 border border-slate-800 hover:border-indigo-500/50 cursor-pointer transition flex flex-col justify-between"
+                 data-url="https://ddl-kiyoshisubs.vercel.app${cat.path}" data-folder="Anime/${cat.id.split('-')[0]}">
+                <div>
+                    <div class="text-[11px] font-bold text-white truncate" dir="ltr">${cat.title}</div>
+                    <div class="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+                        <span>${cat.count}</span>
+                        <span class="font-mono text-cyan-400">${cat.size_str}</span>
+                    </div>
+                </div>
+                <div class="mt-2 text-[10px] text-indigo-400 flex items-center gap-1">
+                    <span>⚡ تصفح الحلقات</span>
+                </div>
+            </div>
+        `).join("");
+
+        document.querySelectorAll(".catalog-card").forEach(card => {
+            card.addEventListener("click", () => {
+                urlInput.value = card.getAttribute("data-url");
+                subfolderInput.value = card.getAttribute("data-folder") || "";
+                btnInspect.click();
+            });
+        });
+    } catch (e) {
+        catalogGrid.innerHTML = `<div class="col-span-full py-2 text-center text-xs text-rose-400">تعذر تحميل الفهرس</div>`;
+    }
 }
 
 // Direct Download Button
@@ -308,6 +394,20 @@ btnDownloadDirect.addEventListener("click", async () => {
     }
 
     const lines = rawInput.split(/[\r\n]+/).map(u => u.trim()).filter(u => u.length > 0);
+
+    // Smart Check: If single URL is a folder, catalog or series, open Inspection modal instead of failing
+    if (lines.length === 1) {
+        const singleUrl = lines[0].toLowerCase();
+        const isDirectFile = singleUrl.endsWith(".mkv") || singleUrl.endsWith(".mp4") || singleUrl.endsWith(".zip") ||
+                             singleUrl.endsWith(".rar") || singleUrl.endsWith(".7z") || singleUrl.endsWith(".torrent") ||
+                             singleUrl.startsWith("magnet:") || singleUrl.includes("/api/raw/");
+        if (!isDirectFile && (singleUrl.includes("kiyoshi") || singleUrl.includes("mugisubs") || singleUrl.includes("vercel.app") || singleUrl.endsWith("/"))) {
+            showToast("رابط مجلد/أرك مكتشف - جاري فحص الحلقات واختيارها...", "info");
+            btnInspect.click();
+            return;
+        }
+    }
+
     const folder = subfolderInput.value.trim();
     btnDownloadDirect.disabled = true;
     btnDownloadDirect.innerHTML = `<span>⏳ جاري الإضافة...</span>`;
@@ -333,7 +433,7 @@ btnDownloadDirect.addEventListener("click", async () => {
     }
 });
 
-// Allow pressing Enter to download immediately
+// Allow pressing Enter to download or inspect
 urlInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
         e.preventDefault();
@@ -417,6 +517,19 @@ function openBatchModal(data) {
     updateBatchSummary();
     batchModal.classList.remove("hidden");
 
+    // Modal Search Filter
+    const modalFilterInput = document.getElementById("modal-filter-input");
+    if (modalFilterInput) {
+        modalFilterInput.value = "";
+        modalFilterInput.oninput = () => {
+            const query = modalFilterInput.value.toLowerCase().trim();
+            document.querySelectorAll("#batch-items-list > div").forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? "flex" : "none";
+            });
+        };
+    }
+
     document.querySelectorAll(".episode-checkbox").forEach(cb => {
         cb.addEventListener("change", updateBatchSummary);
     });
@@ -426,6 +539,28 @@ function updateBatchSummary() {
     const checked = document.querySelectorAll(".episode-checkbox:checked");
     selectedSummary.textContent = `${checked.length} من أصل ${currentBatchItems.length} محدد`;
     btnConfirmDownloadBatch.textContent = `📥 بدء تحميل الحلقات المحددة (${checked.length})`;
+}
+
+const btnSelectLatest5 = document.getElementById("btn-select-latest-5");
+if (btnSelectLatest5) {
+    btnSelectLatest5.addEventListener("click", () => {
+        const checkboxes = Array.from(document.querySelectorAll(".episode-checkbox"));
+        checkboxes.forEach((cb, idx) => {
+            cb.checked = (idx < 5);
+        });
+        updateBatchSummary();
+    });
+}
+
+const btnSelectLatest10 = document.getElementById("btn-select-latest-10");
+if (btnSelectLatest10) {
+    btnSelectLatest10.addEventListener("click", () => {
+        const checkboxes = Array.from(document.querySelectorAll(".episode-checkbox"));
+        checkboxes.forEach((cb, idx) => {
+            cb.checked = (idx < 10);
+        });
+        updateBatchSummary();
+    });
 }
 
 btnSelectAll.addEventListener("click", () => {

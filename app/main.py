@@ -106,6 +106,12 @@ async def get_status():
             "stopped": []
         }
 
+@app.get("/api/catalog")
+async def get_catalog():
+    """Returns available anime series & collections for fast selection."""
+    from .resolvers.kiyoshii import CATALOG_ITEMS
+    return {"success": True, "catalog": CATALOG_ITEMS}
+
 @app.post("/api/inspect")
 async def inspect_url(req: InspectRequest):
     """Inspects a URL to check if it contains multiple files (e.g. Mugisubs, Kiyoshii) or a single download."""

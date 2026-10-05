@@ -154,13 +154,36 @@
 
                 <!-- Quick Preset Shortcuts -->
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-[11px] font-semibold text-slate-400">⚡ اختصارات فحص الحلقات بنقرة واحدة:</span>
+                    <span class="text-[11px] font-semibold text-slate-400">⚡ اختصارات سريعة بنقرة واحدة:</span>
                     <button type="button" id="btn-preset-onepiece" class="px-3 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
-                        <span>🏴‍☠️ ون بيس (أرك إلباف 1155 - 1160)</span>
+                        <span>🏴‍☠️ ون بيس (أرك إلباف 1156 - 1180 | 25 حلقة)</span>
+                    </button>
+                    <button type="button" id="btn-preset-catalog" class="px-3 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+                        <span>📚 تصفح مكتبة KiyoshiiSubs (24 أنمي وفيلم)</span>
                     </button>
                     <button type="button" id="btn-preset-bleach" class="px-3 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/20 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
-                        <span>⚔️ بليتش (Bleach MugiSubs)</span>
+                        <span>⚔️ بليتش (Bleach TYBW)</span>
                     </button>
+                    <button type="button" id="btn-preset-blackclover" class="px-3 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+                        <span>🍀 بلاك كلوفر S2</span>
+                    </button>
+                    <button type="button" id="btn-preset-movies" class="px-3 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+                        <span>🎬 ون بيس فيلم ريد</span>
+                    </button>
+                </div>
+
+                <!-- Catalog Explorer Section -->
+                <div id="catalog-section" class="p-3.5 rounded-xl bg-dark-950/60 border border-slate-800/80 space-y-2">
+                    <div class="flex items-center justify-between cursor-pointer select-none" id="btn-toggle-catalog">
+                        <div class="flex items-center gap-2 text-xs font-bold text-slate-300">
+                            <span class="text-cyan-400">📂</span>
+                            <span>فهرس ومكتبة الأنميات المتاحة في السيرفر (KiyoshiiSubs 484GB+)</span>
+                        </div>
+                        <span id="catalog-toggle-icon" class="text-xs text-indigo-400 font-semibold hover:underline">▼ عرض الأنميات (14 قسم)</span>
+                    </div>
+                    <div id="catalog-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pt-2 hidden">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
 
                 <!-- Subfolder & Action Buttons -->
@@ -236,8 +259,27 @@
                 </button>
             </div>
 
+            <!-- Renewing Token Notice -->
+            <div class="px-4 py-2 bg-indigo-950/50 border-b border-indigo-500/20 text-[11px] text-indigo-300 flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                    <span class="text-cyan-400 font-bold">⚡ الروابط المتجددة:</span>
+                    <span>يتم توليد توكن Microsoft tempauth تلقائياً لحظة بدء التنزيل لمنع أي انتهاء للصلاحية.</span>
+                </span>
+                <span class="font-mono text-emerald-400 text-[10px] font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Aria2 Multi-Stream</span>
+            </div>
+
+            <!-- Search Filter & Quick Select -->
+            <div class="px-4 py-2 border-b border-slate-800 bg-dark-950/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 text-xs">
+                <input type="text" id="modal-filter-input" placeholder="🔍 فلترة الحلقات (مثلاً: 1175 أو 1080p)..." 
+                       class="px-3 py-1.5 rounded-lg bg-dark-900 border border-slate-700/80 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-brand-500 flex-1">
+                <div class="flex items-center gap-2">
+                    <button type="button" id="btn-select-latest-5" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-indigo-300 border border-slate-700 transition">أحدث 5 حلقات</button>
+                    <button type="button" id="btn-select-latest-10" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-cyan-300 border border-slate-700 transition">أحدث 10 حلقات</button>
+                </div>
+            </div>
+
             <!-- Selection Bar -->
-            <div class="px-5 py-3 border-b border-slate-800/80 bg-dark-900/80 flex items-center justify-between text-xs">
+            <div class="px-5 py-2.5 border-b border-slate-800/80 bg-dark-900/80 flex items-center justify-between text-xs">
                 <div class="flex items-center gap-3">
                     <button id="btn-select-all" class="text-cyan-400 hover:underline font-semibold">تحديد الكل</button>
                     <span class="text-slate-600">|</span>
