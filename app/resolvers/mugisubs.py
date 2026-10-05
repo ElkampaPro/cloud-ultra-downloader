@@ -92,7 +92,8 @@ class MugiSubsResolver(BaseResolver):
             clean_path += "/"
 
         async def fetch_folder_files(session: aiohttp.ClientSession, path_to_fetch: str):
-            encoded_path = urllib.parse.quote(path_to_fetch, safe="/:")
+            unquoted = urllib.parse.unquote(path_to_fetch)
+            encoded_path = urllib.parse.quote(unquoted, safe="/:")
             folder_url = f"{base_origin}{encoded_path}"
             payload = {
                 "id": "",
@@ -121,6 +122,9 @@ class MugiSubsResolver(BaseResolver):
                         folders_to_scan.append(f"/0:/{rname}/")
             else:
                 folders_to_scan.append(clean_path)
+
+            if is_root or not folders_to_scan:
+                folders_to_scan = [f"/0:/{cat['path'].strip('/')}/" for cat in MUGISUBS_CATALOG]
 
             all_video_files = []
 
